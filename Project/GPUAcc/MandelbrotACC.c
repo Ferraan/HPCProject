@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
     coordX[0]=WindowX[0];
     coordY[0]=WindowY[0];
     //Allocate matrix coordinates: 
-    #pragma omp parallel for shared(coordX,coordY)
+    #pragma acc parallel loop
     for (int i = 1; i < n; i++)
     {
         coordX[i]=coordX[0]+i*deltax;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]){
                 iteration++;
             }
             
-            ac_mat(k,px,py,n) = iter-iteration;
+            ac_mat(k,py,px,n) = iter-iteration;
             
         }
     }

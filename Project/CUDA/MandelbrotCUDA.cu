@@ -2,16 +2,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <omp.h>
+#include <openacc.h>
 
-#define ac_mat(X,i,j,n) X[(i)*(n)+(j)]
+
 #define AC_IMG(img,i,j,c) img[(int)(ch*height*(i)+ch*(j)+(c))]
+#define ac_mat(X,i,j,n) X[(i)*(n)+(j)]
 
 double *readImage(const char *fname, int *width, int *height, int *ch);
 void writeImage(const char *fname, const double *img, const int width, const int height, const int ch);
 
+__global__ void gpucoords(int n, double deltax, double deltay,double x0, double y0,double *coordX, double *coordY);
+__global__ void MandelbrotGPU(int n, double *coordX, double *coordY, int iter,double *k);
+
 int main(int argc, char *argv[]){
     int n, iter;
     double WindowX[2], WindowY[2];
+
     if (argc == 3) {
         n = atoi(argv[1]);
         iter = atoi(argv[2]);
@@ -31,62 +38,57 @@ int main(int argc, char *argv[]){
         exit(0);
     }
     
-    clock_t time1, time2;
+    double time1, time2;
     double dub_time;
-
     const int ch=1;
-
     const double deltax=(WindowX[1]-WindowX[0])/(double)(n-1);
     const double deltay=(WindowY[1]-WindowY[0])/(double)(n-1);
-    double* k=(double*)calloc(n*n,sizeof(double)); //Pot ser un static array
-    double* k2=(double*)calloc(n*n,sizeof(double)); 
-    time1=clock();
-    //Naive code
+    double* coordX=(double*)calloc(n,sizeof(double)); 
+    double* coordY=(double*)calloc(n,sizeof(double));
+    double* coordX2=(double*)calloc(n,sizeof(double));
+    double* coordY2=(double*)calloc(n,sizeof(double));
+    double* k=(double*)calloc(n*n,sizeof(double)); //Pot ser un static array? No, memoria estatica petita
 
-    //Compute the mandelbrot set
-    for (int px = 0; px < n; ++px)
-    {   
-        double cx=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
-        for (int py = 0; py < n; ++py)
-        {
-            
-            double cy=WindowY[0]+py*deltay;
-            double zx=0.;
-            double zy=0.;
-            double zz=0.;
-            //printf("X:%d Y:%d ",px,py);
-            for (int i = 1; i < iter+1; ++i) //To be the same as the matlab code
-            {
-                double zx2=cx+zx*zx-zy*zy;
-                double zy2=cy+zx*zy*2;
-                zx=zx2;
-                zy=zy2;
-                if (zx*zx+zy*zy>4)
-                {
-                    zz=iter-i;
-                    break;
+    double *coordXGPU, *coordYGPU;
+    cudaMalloc((void **)&coordXGPU,n*sizeof(double));
+    cudaMalloc((void **)&coordYGPU,n*sizeof(double));
+    int tbp_x = 128;
+    int numTB_x = (n + tbp_x - 1) / tbp_x; // Guarantees 1 extra block if n is not a multiple of tbp_x
+    dim3 block(tbp_x,1,1);
+    dim3 grid(numTB_x,1,1);
+    gpucoords<<<grid,block>>>(n,deltax,deltay,WindowX[0],WindowY[0],coordXGPU,coordYGPU);
+    cudaMemcpy(coordX2,coordXGPU,n*sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(coordY2,coordYGPU,n*sizeof(double),cudaMemcpyDeviceToHost);
 
-                }
-                
-            }
-            ac_mat(k,py,px,n) = zz;
-            
-        }
+
+    //Allocate matrix coordinates: 
+    for (int i = 0; i < n; i++)
+    {
+        coordX[i]=WindowX[0]+i*deltax;
+        coordY[i]=WindowY[0]+i*deltay;
+        printf("coordXCPU=%f  coordXGPU=%f\n",coordX[i],coordX2[i]);
+        printf("coordYCPU=%f  coordYGPU=%f\n",coordY[i],coordY2[i]);
     }
-    time2=clock();
-    dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
-    printf("Time for n=%d and iter=%d -----> %lf \n", n,iter,dub_time);
-
-    //Optimized code
-    time1=clock();
+    //Mandelcuda
+    double *kGPU;
+    cudaMalloc((void **)&kGPU,n*n*sizeof(double));
+    int ntx = 16;
+    int nty = 16;
+    int nBlocksX = (n+ntx-1)/ntx;
+    int nBlocksY = (n+nty-1)/nty;
+    dim3 block2(ntx, nty);
+    dim3 grid2(nBlocksX, nBlocksY);
+    MandelbrotGPU<<<grid2,block2>>>(n,coordXGPU,coordYGPU,iter,kGPU);
+    double *k2=(double*)malloc(n*n*sizeof(double));
+    cudaMemcpy(k2,kGPU,n*n*sizeof(double),cudaMemcpyDeviceToHost);
     //Compute the mandelbrot set
+    
     for (int px = 0; px < n; ++px)
     {   
-        double x0=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
         for (int py = 0; py < n; ++py)
         {
-            
-            double y0=WindowY[0]+py*deltay;
+            double x0=coordX[px]; //Posar dintre altre for per OPEN*
+            double y0=coordY[py];
             double x2=0;
             double y2=0;
             double x=0;
@@ -102,17 +104,16 @@ int main(int argc, char *argv[]){
                 iteration++;
             }
             
-            ac_mat(k2,py,px,n) = iter-iteration; //Transposed, explained in report
+            ac_mat(k,py,px,n) = iter-iteration;
             
         }
     }
-    time2=clock();
-    dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
-    printf("Time for n=%d and iter=%d optimized -----> %lf \n", n,iter,dub_time);
+    
 
     
 
     #ifdef DEBUG
+        printf("CPU:\n");
         for (int px = 0; px < n; px++)
         {
             for (int py = 0; py < n; py++)
@@ -121,7 +122,7 @@ int main(int argc, char *argv[]){
             }
             printf("\n");
         }
-        printf("Mat2\n");
+        printf("GPU:\n");
         for (int px = 0; px < n; px++)
         {
             for (int py = 0; py < n; py++)
@@ -131,14 +132,51 @@ int main(int argc, char *argv[]){
             printf("\n");
         }
     #endif
-    writeImage("test",k,n,n,ch);
-    writeImage("test2",k2,n,n,ch);
-
+    #ifdef WRITE
+        writeImage("test",k2,n,n,ch);
+    #endif
     free(k);
     free(k2);
+
 }
 
-////////
+__global__ void gpucoords(int n, double deltax, double deltay,double x0, double y0,double *coordX, double *coordY){
+    int i=blockIdx.x * blockDim.x + threadIdx.x;
+    if (i<n)
+    {
+        coordX[i]=x0+deltax*i;
+        coordY[i]=y0+deltay*i;
+    }
+    
+}
+
+__global__ void MandelbrotGPU(int n, double *coordX, double *coordY, int iter,double *k){
+    int px = blockIdx.x * blockDim.x + threadIdx.x;
+    int py = blockIdx.y * blockDim.y + threadIdx.y;
+    if (px < n && py < n) {
+        double x0=coordX[px]; //Posar dintre altre for per OPEN*
+            double y0=coordY[py];
+            double x2=0;
+            double y2=0;
+            double x=0;
+            double y=0;
+            //printf("X:%d Y:%d ",px,py);
+            int iteration=0;
+            while (x2+y2<=4 && iteration<iter)
+            {
+                y=(x+x)*y+y0;
+                x=x2-y2+x0;
+                x2=x*x;
+                y2=y*y;
+                iteration++;
+            }
+            
+            ac_mat(k,py,px,n) = iter-iteration;
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 double *readImage(const char *fname, int *width, int *height, int *ch) {
 /*
 	This subroutine reads an image stored as a double pointer

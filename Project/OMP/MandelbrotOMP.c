@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <omp.h>
+
 
 #define ac_mat(X,i,j,n) X[(i)*(n)+(j)]
-#define AC_IMG(img,i,j,c) img[(int)(ch*height*(i)+ch*(j)+(c))]
 
 double *readImage(const char *fname, int *width, int *height, int *ch);
 void writeImage(const char *fname, const double *img, const int width, const int height, const int ch);
@@ -12,6 +13,7 @@ void writeImage(const char *fname, const double *img, const int width, const int
 int main(int argc, char *argv[]){
     int n, iter;
     double WindowX[2], WindowY[2];
+
     if (argc == 3) {
         n = atoi(argv[1]);
         iter = atoi(argv[2]);
@@ -31,61 +33,22 @@ int main(int argc, char *argv[]){
         exit(0);
     }
     
-    clock_t time1, time2;
+    double time1, time2;
     double dub_time;
-
     const int ch=1;
-
     const double deltax=(WindowX[1]-WindowX[0])/(double)(n-1);
     const double deltay=(WindowY[1]-WindowY[0])/(double)(n-1);
     double* k=(double*)calloc(n*n,sizeof(double)); //Pot ser un static array
-    double* k2=(double*)calloc(n*n,sizeof(double)); 
-    time1=clock();
-    //Naive code
-
-    //Compute the mandelbrot set
-    for (int px = 0; px < n; ++px)
-    {   
-        double cx=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
-        for (int py = 0; py < n; ++py)
-        {
-            
-            double cy=WindowY[0]+py*deltay;
-            double zx=0.;
-            double zy=0.;
-            double zz=0.;
-            //printf("X:%d Y:%d ",px,py);
-            for (int i = 1; i < iter+1; ++i) //To be the same as the matlab code
-            {
-                double zx2=cx+zx*zx-zy*zy;
-                double zy2=cy+zx*zy*2;
-                zx=zx2;
-                zy=zy2;
-                if (zx*zx+zy*zy>4)
-                {
-                    zz=iter-i;
-                    break;
-
-                }
-                
-            }
-            ac_mat(k,py,px,n) = zz;
-            
-        }
-    }
-    time2=clock();
-    dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
-    printf("Time for n=%d and iter=%d -----> %lf \n", n,iter,dub_time);
-
+    
+    time1=omp_get_wtime();
     //Optimized code
-    time1=clock();
     //Compute the mandelbrot set
+    #pragma omp parallel for collapse(2) shared(deltax,deltay,WindowX,WindowY,k)
     for (int px = 0; px < n; ++px)
     {   
-        double x0=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
         for (int py = 0; py < n; ++py)
         {
-            
+            double x0=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
             double y0=WindowY[0]+py*deltay;
             double x2=0;
             double y2=0;
@@ -102,12 +65,12 @@ int main(int argc, char *argv[]){
                 iteration++;
             }
             
-            ac_mat(k2,py,px,n) = iter-iteration; //Transposed, explained in report
+            ac_mat(k,py,px,n) = iter-iteration;
             
         }
     }
-    time2=clock();
-    dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
+    time2=omp_get_wtime();
+    dub_time = time2 - time1 ;
     printf("Time for n=%d and iter=%d optimized -----> %lf \n", n,iter,dub_time);
 
     
@@ -121,24 +84,17 @@ int main(int argc, char *argv[]){
             }
             printf("\n");
         }
-        printf("Mat2\n");
-        for (int px = 0; px < n; px++)
-        {
-            for (int py = 0; py < n; py++)
-            {
-                printf("%f ", ac_mat(k2,px,py,n));
-            }
-            printf("\n");
-        }
     #endif
-    writeImage("test",k,n,n,ch);
-    writeImage("test2",k2,n,n,ch);
-
+    #ifdef WRITE
+        writeImage("test",k,n,n,ch);
+    #endif
     free(k);
-    free(k2);
+
 }
 
-////////
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 double *readImage(const char *fname, int *width, int *height, int *ch) {
 /*
 	This subroutine reads an image stored as a double pointer

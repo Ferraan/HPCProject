@@ -14,11 +14,11 @@ after the predetermined number of iterations, niter ).
 clear
 close all
 
-n=7;
-niter=10;
+n=30;
+niter=30;
 
-x0 = -2;   x1 = 0.47;
-y0 = -1.12; y1 = 1.12;
+x0 = -2;   x1 = 1;
+y0 = -1.5; y1 = 1.5;
 
 [x,y] = meshgrid(linspace(x0, x1, n), linspace(y0, y1, n));
 
@@ -47,7 +47,7 @@ if loop1==1
         end
     end
     toc
-    %sum(k(:))
+    sum(k(:))
 end
 
 % Without complex numbers
@@ -74,7 +74,7 @@ if loop2==1
         end
     end
     toc
-    %sum(k(:))
+    sum(k(:))
 end
 
 % loop3: with vectors of coordinates instead of matrices
@@ -90,14 +90,14 @@ if loop3==1
             cy=cyv(py);
             zx=0;
             zy=0;
-            k(py,px)=0; % assume it is not diverging
+            k(px,py)=0; % assume it is not diverging
             for ii=1:niter
                 zx2 = cx + zx*zx-zy*zy;
                 zy2 = cy + zx*zy*2;
                 zx=zx2;
                 zy=zy2;
                 if zx*zx+zy*zy > 4 
-                    k(py,px)=niter-ii;
+                    k(px,py)=niter-ii;
                     break;
                 end
             end
@@ -106,7 +106,7 @@ if loop3==1
     toc
     %sum(k(:))
 end
-k=k';
+
 % vectorized loop: all the points of the set are evaluated together
 if loop4==1
     tic
@@ -125,7 +125,7 @@ if loop4==1
         k(abs(z) > 2 & k == 0) = niter - ii; 
     end
     toc
-    %sum(k(:))
+    sum(k(:))
 end
 
 
