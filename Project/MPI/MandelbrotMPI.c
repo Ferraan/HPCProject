@@ -3,7 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "mpi.h"
-#include "Image.h"
+
 
 #define AC_IMG(img,i,j,c) img[(int)(ch*height*(i)+ch*(j)+(c))]
 #define ac_mat(X,i,j,n) X[(i)*(n)+(j)]
@@ -69,8 +69,6 @@ int main(int argc, char *argv[]){
         }
             
         kLOC[posk] = iter-iteration; //Transposed, explained in report
-        //printf("cx:%f  cy:%f  rank:%d \n",x0,y0,myrank);
-        //printf("k[%d,%d]=%f  rank:%d\n",posy,posx,ac_mat(k,posy,posx,n),myrank);
         posk++;
 	}
     endtime   = MPI_Wtime();
@@ -115,7 +113,9 @@ int main(int argc, char *argv[]){
                 printf("\n");
             }
         #endif
-        writeImage("test",kGLO,n,n,ch);
+        #ifdef WRITE
+            writeImage("MandelbrotImage",kGLO,n,n,ch);
+        #endif
     }
     
     free(mystart);

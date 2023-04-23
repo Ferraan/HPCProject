@@ -6,6 +6,7 @@
 
 
 #define ac_mat(X,i,j,n) X[(i)*(n)+(j)]
+#define AC_IMG(img,i,j,c) img[(int)(ch*height*(i)+ch*(j)+(c))]
 
 double *readImage(const char *fname, int *width, int *height, int *ch);
 void writeImage(const char *fname, const double *img, const int width, const int height, const int ch);
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]){
         }
     #endif
     #ifdef WRITE
-        writeImage("test",k,n,n,ch);
+        writeImage("MandelbrotImage",k,n,n,ch);
     #endif
     free(k);
 

@@ -12,8 +12,7 @@
 double *readImage(const char *fname, int *width, int *height, int *ch);
 void writeImage(const char *fname, const double *img, const int width, const int height, const int ch);
 
-__global__ void gpucoords(int n, double deltax, double deltay,double x0, double y0,double *coordX, double *coordY);
-__global__ void MandelbrotGPU(int n, double *coordX, double *coordY, int iter,double *k);
+__global__ void MandelbrotGPU(int n, double deltax, double deltay,double WindowX0, double WindowY0, int iter,double *k);
 
 int main(int argc, char *argv[]){
     int n, iter;
@@ -43,32 +42,8 @@ int main(int argc, char *argv[]){
     const int ch=1;
     const double deltax=(WindowX[1]-WindowX[0])/(double)(n-1);
     const double deltay=(WindowY[1]-WindowY[0])/(double)(n-1);
-    double* coordX=(double*)calloc(n,sizeof(double)); 
-    double* coordY=(double*)calloc(n,sizeof(double));
-    double* coordX2=(double*)calloc(n,sizeof(double));
-    double* coordY2=(double*)calloc(n,sizeof(double));
     double* k=(double*)calloc(n*n,sizeof(double)); //Pot ser un static array? No, memoria estatica petita
 
-    double *coordXGPU, *coordYGPU;
-    cudaMalloc((void **)&coordXGPU,n*sizeof(double));
-    cudaMalloc((void **)&coordYGPU,n*sizeof(double));
-    int tbp_x = 128;
-    int numTB_x = (n + tbp_x - 1) / tbp_x; // Guarantees 1 extra block if n is not a multiple of tbp_x
-    dim3 block(tbp_x,1,1);
-    dim3 grid(numTB_x,1,1);
-    gpucoords<<<grid,block>>>(n,deltax,deltay,WindowX[0],WindowY[0],coordXGPU,coordYGPU);
-    cudaMemcpy(coordX2,coordXGPU,n*sizeof(double),cudaMemcpyDeviceToHost);
-    cudaMemcpy(coordY2,coordYGPU,n*sizeof(double),cudaMemcpyDeviceToHost);
-
-
-    //Allocate matrix coordinates: 
-    for (int i = 0; i < n; i++)
-    {
-        coordX[i]=WindowX[0]+i*deltax;
-        coordY[i]=WindowY[0]+i*deltay;
-        printf("coordXCPU=%f  coordXGPU=%f\n",coordX[i],coordX2[i]);
-        printf("coordYCPU=%f  coordYGPU=%f\n",coordY[i],coordY2[i]);
-    }
     //Mandelcuda
     double *kGPU;
     cudaMalloc((void **)&kGPU,n*n*sizeof(double));
@@ -78,42 +53,12 @@ int main(int argc, char *argv[]){
     int nBlocksY = (n+nty-1)/nty;
     dim3 block2(ntx, nty);
     dim3 grid2(nBlocksX, nBlocksY);
-    MandelbrotGPU<<<grid2,block2>>>(n,coordXGPU,coordYGPU,iter,kGPU);
-    double *k2=(double*)malloc(n*n*sizeof(double));
-    cudaMemcpy(k2,kGPU,n*n*sizeof(double),cudaMemcpyDeviceToHost);
-    //Compute the mandelbrot set
-    
-    for (int px = 0; px < n; ++px)
-    {   
-        for (int py = 0; py < n; ++py)
-        {
-            double x0=coordX[px]; //Posar dintre altre for per OPEN*
-            double y0=coordY[py];
-            double x2=0;
-            double y2=0;
-            double x=0;
-            double y=0;
-            //printf("X:%d Y:%d ",px,py);
-            int iteration=0;
-            while (x2+y2<=4 && iteration<iter)
-            {
-                y=(x+x)*y+y0;
-                x=x2-y2+x0;
-                x2=x*x;
-                y2=y*y;
-                iteration++;
-            }
-            
-            ac_mat(k,py,px,n) = iter-iteration;
-            
-        }
-    }
-    
-
-    
+    MandelbrotGPU<<<grid2,block2>>>(n,deltax,deltay,WindowX[0],WindowY[0],iter,kGPU);
+    cudaMemcpy(k,kGPU,n*n*sizeof(double),cudaMemcpyDeviceToHost);
+    //Compute the mandelbrot set 
 
     #ifdef DEBUG
-        printf("CPU:\n");
+        printf("GPU:\n");
         for (int px = 0; px < n; px++)
         {
             for (int py = 0; py < n; py++)
@@ -122,45 +67,25 @@ int main(int argc, char *argv[]){
             }
             printf("\n");
         }
-        printf("GPU:\n");
-        for (int px = 0; px < n; px++)
-        {
-            for (int py = 0; py < n; py++)
-            {
-                printf("%f ", ac_mat(k2,px,py,n));
-            }
-            printf("\n");
-        }
     #endif
     #ifdef WRITE
-        writeImage("test",k2,n,n,ch);
+        writeImage("MandelbrotImage",k,n,n,ch);
     #endif
     free(k);
-    free(k2);
-
+    cudaFree(kGPU);
 }
 
-__global__ void gpucoords(int n, double deltax, double deltay,double x0, double y0,double *coordX, double *coordY){
-    int i=blockIdx.x * blockDim.x + threadIdx.x;
-    if (i<n)
-    {
-        coordX[i]=x0+deltax*i;
-        coordY[i]=y0+deltay*i;
-    }
-    
-}
 
-__global__ void MandelbrotGPU(int n, double *coordX, double *coordY, int iter,double *k){
+__global__ void MandelbrotGPU(int n, double deltax, double deltay,double WindowX0, double WindowY0, int iter,double *k){
     int px = blockIdx.x * blockDim.x + threadIdx.x;
     int py = blockIdx.y * blockDim.y + threadIdx.y;
     if (px < n && py < n) {
-        double x0=coordX[px]; //Posar dintre altre for per OPEN*
-            double y0=coordY[py];
+            double x0=WindowX0+px*deltax;
+            double y0=WindowY0+py*deltay;
             double x2=0;
             double y2=0;
             double x=0;
             double y=0;
-            //printf("X:%d Y:%d ",px,py);
             int iteration=0;
             while (x2+y2<=4 && iteration<iter)
             {

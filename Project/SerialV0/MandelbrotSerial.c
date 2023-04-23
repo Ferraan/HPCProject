@@ -131,8 +131,8 @@ int main(int argc, char *argv[]){
             printf("\n");
         }
     #endif
-    writeImage("test",k,n,n,ch);
-    writeImage("test2",k2,n,n,ch);
+    writeImage("MandelbrotImageNaive",k,n,n,ch);
+    writeImage("MandelbrotImageOptimized",k2,n,n,ch);
 
     free(k);
     free(k2);

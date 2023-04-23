@@ -1,0 +1,2 @@
+nvc -fast -gpu=cc61,managed,lineinfo -acc -cuda -Minfo=all ./ProvaACC.c -o ProvaACC.out
+
