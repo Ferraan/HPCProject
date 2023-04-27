@@ -51,9 +51,13 @@ int main(int argc, char *argv[]){
     int nty = 16;
     int nBlocksX = (n+ntx-1)/ntx;
     int nBlocksY = (n+nty-1)/nty;
+    time1=omp_get_wtime();
     dim3 block2(ntx, nty);
     dim3 grid2(nBlocksX, nBlocksY);
     MandelbrotGPU<<<grid2,block2>>>(n,deltax,deltay,WindowX[0],WindowY[0],iter,kGPU);
+    time2=omp_get_wtime();
+    dub_time = time2 - time1 ;
+    printf("Time for n=%d and iter=%d CUDA -----> %lf \n", n,iter,dub_time);
     cudaMemcpy(k,kGPU,n*n*sizeof(double),cudaMemcpyDeviceToHost);
     //Compute the mandelbrot set 
 
