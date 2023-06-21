@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
     {   
         for (int py = 0; py < n; ++py)
         {
-            double x0=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
+            double x0=WindowX[0]+px*deltax; 
             double y0=WindowY[0]+py*deltay;
             double x2=0;
             double y2=0;

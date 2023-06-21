@@ -46,6 +46,8 @@
 # Kernel Module Compile Results
 *.mod*
 *.cmd
+*.nsys-rep
+*.sqlite
 .tmp_versions/
 modules.order
 Module.symvers

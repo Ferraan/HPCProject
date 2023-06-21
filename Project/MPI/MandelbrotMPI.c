@@ -24,17 +24,33 @@ int main(int argc, char *argv[]){
     r=MPI_Comm_size(MPI_COMM_WORLD,&P); checkr(r,"size");
     r=MPI_Get_processor_name(name,&l); checkr(r,"name");
     
-    const int n=10000;  //Up to n=40000 using 16Gb RAM and a little bit of swap
-    const int iter=100;
-    const int ch=1;
-    const double WindowX[2]={-2,0.47};
-    const double WindowY[2]={-1.12, 1.12};
+    int n, iter;
+    double WindowX[2], WindowY[2];
+
+    if (argc == 3) {
+        n = atoi(argv[1]);
+        iter = atoi(argv[2]);
+        WindowX[0] = -2;
+        WindowX[1] = 0.47;
+        WindowY[0] = -1.12;
+        WindowY[1] = 1.12;
+    } else if (argc == 7) {
+        n = atoi(argv[1]);
+        iter = atoi(argv[2]);
+        WindowX[0] = atof(argv[3]);
+        WindowX[1] = atof(argv[4]);
+        WindowY[0] = atof(argv[5]);
+        WindowY[1] = atof(argv[6]);
+    } else {
+        printf("Add arguments\n");
+        exit(0);
+    }
     const double deltax=(WindowX[1]-WindowX[0])/(double)(n-1);
     const double deltay=(WindowY[1]-WindowY[0])/(double)(n-1);
     
     double starttime, endtime;
     int mystart, myend;
-    double* coordX=(double*)calloc(n,sizeof(double)); //Can be arrays, not changing potser no, el heap? es petit
+    double* coordX=(double*)calloc(n,sizeof(double)); 
     double* coordY=(double*)calloc(n,sizeof(double));
         
     worksplit(&mystart,&myend,myrank,P,0,n*n-1);
@@ -43,7 +59,7 @@ int main(int argc, char *argv[]){
     #ifdef DEBUG
         printf("ntasks=%d, *mystart=%d, *myend=%d\n",ntasks,*mystart,*myend);
     #endif
-    double* kLOC=(double*)calloc(ntasks,sizeof(double)); //Pot ser un static array
+    double* kLOC=(double*)calloc(ntasks,sizeof(double)); 
     starttime = MPI_Wtime();
     for(int i = mystart, posk = 0; i <= myend; i++, posk++){
 		//printf("rank: %d, task: %d\n",myrank, i);

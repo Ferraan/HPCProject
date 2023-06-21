@@ -18,107 +18,141 @@ int main(int argc, char *argv[]){
     int myrank; /* from 0 to P-1 */
     int P; /* number of processes */
     char name[MPI_MAX_PROCESSOR_NAME+1]; /* processor name */
-    int r,l; /* detalls */
+    int r,l; 
     r=MPI_Init(&argc,&argv); checkr(r,"init");
     r=MPI_Comm_rank(MPI_COMM_WORLD,&myrank); checkr(r,"rank");
     r=MPI_Comm_size(MPI_COMM_WORLD,&P); checkr(r,"size");
     r=MPI_Get_processor_name(name,&l); checkr(r,"name");
     
-    const int n=10000;  //Up to n=40000 using 16Gb RAM and a little bit of swap
-    const int iter=100;
-    const int ch=1;
-    const double WindowX[2]={-2,0.47};
-    const double WindowY[2]={-1.12, 1.12};
+    //Arguments
+    int n, iter;
+    double WindowX[2], WindowY[2];
+
+    if (argc == 3) {
+        n = atoi(argv[1]);
+        iter = atoi(argv[2]);
+        WindowX[0] = -2;
+        WindowX[1] = 0.47;
+        WindowY[0] = -1.12;
+        WindowY[1] = 1.12;
+    } else if (argc == 7) {
+        n = atoi(argv[1]);
+        iter = atoi(argv[2]);
+        WindowX[0] = atof(argv[3]);
+        WindowX[1] = atof(argv[4]);
+        WindowY[0] = atof(argv[5]);
+        WindowY[1] = atof(argv[6]);
+    } else {
+        printf("Add arguments\n");
+        exit(0);
+    }
+
+    
+    
+    const int nx=3,ny=2;
+    if ((nx*ny)!=P)
+    {
+        printf("Different number of divisions than ranks\n");
+        exit(1);
+    }
+    
+    
     const double deltax=(WindowX[1]-WindowX[0])/(double)(n-1);
     const double deltay=(WindowY[1]-WindowY[0])/(double)(n-1);
     
     double starttime, endtime;
-    int mystart, myend;
-    double* coordX=(double*)calloc(n,sizeof(double)); //Can be arrays, not changing potser no, el heap? es petit
+    int mystartx, myendx,mystarty, myendy;
+    double* coordX=(double*)calloc(n,sizeof(double)); 
     double* coordY=(double*)calloc(n,sizeof(double));
         
-    worksplit(&mystart,&myend,myrank,P,0,n*n-1);
-    int ntasks=myend-mystart+1;
-
-    #ifdef DEBUG
-        printf("ntasks=%d, *mystart=%d, *myend=%d\n",ntasks,*mystart,*myend);
-    #endif
-    double* kLOC=(double*)calloc(ntasks,sizeof(double)); //Pot ser un static array
-    starttime = MPI_Wtime();
-    for(int i = mystart, posk = 0; i <= myend; i++, posk++){
-		//printf("rank: %d, task: %d\n",myrank, i);
-        int posx = i/n;
-        int posy = i % n;
-        double x0=WindowX[0]+posx*deltax;
-        double y0=WindowY[0]+posy*deltay;        
-        double x2=0;
-        double y2=0;
-        double x=0;
-        double y=0;
-        //printf("X:%d Y:%d ",px,py);
-        int iteration=0;
-        while (x2+y2<=4 && iteration<iter)
-        {
-            y=(x+x)*y+y0;
-            x=x2-y2+x0;
-            x2=x*x;
-            y2=y*y;
-            iteration++;
-        }
-        kLOC[posk] = iter-iteration; //Transposed, explained in report
-	}
-    endtime   = MPI_Wtime();
-    printf("Time for rank:%d before gather ----> %f seconds\n",myrank,endtime-starttime); fflush(stdout);
-
-    double* kGLO=NULL; //Initialized for all variables
-    int* tasksGLO=(int*)malloc(P*sizeof(int));
-    int* displ=(int*)malloc(P*sizeof(int));
-    
-    r=MPI_Gather(&ntasks,1,MPI_INT,tasksGLO,1,MPI_INT,0,MPI_COMM_WORLD); checkr(r,"gather"); //Faster to communicate, or to calculate?
-    if (myrank==0)
+    int count=0;
+    for (int i = 0; i < nx; i++)
     {
-        kGLO=(double*)realloc(kGLO,n*n*sizeof(double));
-        displ[0]=0;
-        for (int i = 1; i < P; i++)
+        for (int j = 0; j < ny; j++)
+        {               
+            worksplit(&mystartx,&myendx,i,nx,0,n-1);
+            worksplit(&mystarty,&myendy,j,ny,0,n-1);
+            if (count==myrank)
+            {
+               goto endLoops;
+            }
+            count++;
+        }
+    }
+    endLoops:;
+
+    int ntasksx=myendx-mystartx+1;
+    int ntasksy=myendy-mystarty+1;
+    int ntasks=0;
+    ntasks=ntasksx*ntasksy;   
+
+    //printf("Myrank:%d Tasksx:%d Tasksy:%d\n",myrank,ntasksx,ntasksy);
+    //printf("Myrank:%d Mystartx:%d Myendx:%d Mystarty:%d Myendy:%d Ntasks:%d\n",myrank,mystartx,myendx,mystarty,myendy,ntasks);
+    
+    int* kLOC=(int*)calloc(ntasks,sizeof(int)); 
+    starttime = MPI_Wtime();
+    for(int i = mystartx, posk = 0; i <= myendx; i++){
+		for (int j = mystarty; j <= myendy; j++,posk++)
         {
-            #ifdef DEBUG
-                printf("displ[i]=%d displ[i-1]=%d tasksGLO[i-1]=%d\n",displ[i],displ[i-1],tasksGLO[i-1]);
-            #endif
-            displ[i]=displ[i-1]+tasksGLO[i-1];
+            //printf("Myrank:%d i:%d j:%d \n",myrank,i,j);
+            double x0=WindowX[0]+j*deltax;
+            double y0=WindowY[0]+i*deltay;        
+            double x2=0;
+            double y2=0;
+            double x=0;
+            double y=0;
+            
+            int iteration=0;
+            while (x2+y2<=4 && iteration<iter)
+            {
+                y=(x+x)*y+y0;
+                x=x2-y2+x0;
+                x2=x*x;
+                y2=y*y;
+                iteration++;
+            }
+            kLOC[posk]= iter-iteration;
+            
+            //printf("Myrank:%d X:%f Y:%f i:%d j:%d value:%d \n",myrank,x0,y0,i,j,kLOC[pos]);
             
         }
-    }
-
-    r=MPI_Gatherv(kLOC,ntasks,MPI_DOUBLE,kGLO,tasksGLO,displ,MPI_DOUBLE,0,MPI_COMM_WORLD); checkr(r,"gather");
+	}
+    checkr(MPI_Barrier(MPI_COMM_WORLD),"Barrier");
     endtime   = MPI_Wtime();
-    printf("Time for rank:%d ----> %f seconds\n",myrank,endtime-starttime);
-    
-    if (myrank==0)
-    {   
-        #ifdef DEBUG
-            for (int i = 0; i < P; i++)
-            {
-                printf("recvcounts=%d  displs=%d\n",tasksGLO[i],displ[i]);
-            }
-            for (int px = 0; px < n; px++)
-            {
-                for (int py = 0; py < n; py++)
-                {
-                    printf("%f ", ac_mat(kGLO,px,py,n));
-                }
-                printf("\n");
-            }
-        #endif
-        #ifdef WRITE
-            writeImage("MandelbrotImage",kGLO,n,n,ch);
-        #endif
-    }
-    
+    printf("Time for rank:%d before gather ----> %f seconds\n",myrank,endtime-starttime,kLOC[0]); fflush(stdout);
+    //printf("myrank:%d tasks:%d tasksx=%d tasksy=%d \n",myrank,ntasks,ntasksx,ntasksy);
+    #ifdef WRITE 
+        //Print matrix
 
-    free(kLOC);
-    free(kGLO);
-    free(displ);
-    free(tasksGLO);
+        int rows=mystarty;
+        int columns=mystartx;
+        int a=-1;
+        for (int i = 0; i < ntasks; i++)
+        {
+            if (i!=0){
+                
+                if(i%ntasksy==0)
+                {
+                    rows=mystarty;
+                }
+                
+            }
+            
+            
+            printf("N(%d,%d)=%d div=%d\n",rows+1,columns+1,kLOC[i],(i+1)%(ntasksy));
+            //printf("%d",ntasksy%i);
+            if (i!=0){
+                if((i+1)%(ntasksy)==0){
+                
+                    columns++;
+                }
+            }
+            rows++;
+            
+        } 
+    #endif
+
+    free(kLOC);   
     MPI_Finalize();
 }
 

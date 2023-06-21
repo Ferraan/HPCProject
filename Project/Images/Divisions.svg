@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="45.564522mm"
+   height="49.095779mm"
+   viewBox="0 0 45.564522 49.095779"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="Divisions.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     showgrid="true"
+     inkscape:zoom="0.96916565"
+     inkscape:cx="-26.311292"
+     inkscape:cy="42.30443"
+     inkscape:window-width="1920"
+     inkscape:window-height="1012"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showguides="true"
+     inkscape:pageshadow="2"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0">
+    <sodipodi:guide
+       position="63.337183,4.0361714"
+       orientation="1,0"
+       id="guide7236"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="69.109713,3.3513014"
+       orientation="0,-1"
+       id="guide7238"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="81.241793,4.3296913"
+       orientation="1,0"
+       id="guide7240"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="98.950722,4.5253713"
+       orientation="1,0"
+       id="guide7242"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="69.068113,-0.76227852"
+       orientation="0,-1"
+       id="guide7244"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="44.84101,49.09601"
+       orientation="0,-1"
+       id="guide8224"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-45.264525,-122.83277)">
+    <g
+       id="g3049"
+       transform="translate(-71.532555,-9.0621676)">
+      <g
+         inkscape:label="GridCartesian:X5:Y5"
+         transform="matrix(1.7728591,0,0,1.7728591,117.34865,132.38744)"
+         id="g656">
+        <g
+           inkscape:label="MajorXGridlines"
+           id="g642">
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 5,0 V 25"
+             inkscape:label="MajorXDiv1"
+             id="path634" />
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 10,0 V 25"
+             inkscape:label="MajorXDiv2"
+             id="path636" />
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 15,0 V 25"
+             inkscape:label="MajorXDiv3"
+             id="path638" />
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 20,0 V 25"
+             inkscape:label="MajorXDiv4"
+             id="path640" />
+        </g>
+        <g
+           inkscape:label="MajorYGridlines"
+           id="g652">
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 0,5 H 25"
+             inkscape:label="MajorYDiv1"
+             id="path644" />
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 0,10 H 25"
+             inkscape:label="MajorYDiv2"
+             id="path646" />
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 0,15 H 25"
+             inkscape:label="MajorYDiv3"
+             id="path648" />
+          <path
+             style="fill:none;stroke:#000000;stroke-width:0.264583"
+             d="M 0,20 H 25"
+             inkscape:label="MajorYDiv4"
+             id="path650" />
+        </g>
+        <rect
+           x="0"
+           y="0"
+           width="25"
+           height="25"
+           style="fill:none;stroke:#000000;stroke-width:0.264583"
+           inkscape:label="Border"
+           id="rect654" />
+      </g>
+      <path
+         style="fill:none;stroke:#ff0000;stroke-width:1.065;stroke-dasharray:none;stroke-opacity:1"
+         d="m 117.32958,176.90469 v -44.47725 h 44.49952 v 44.31919 z"
+         id="path672" />
+      <text
+         xml:space="preserve"
+         style="font-size:3.175px;fill:#ff0000;fill-opacity:1;stroke:#ff0000;stroke-width:0.1;stroke-dasharray:none;stroke-opacity:1"
+         x="136.94705"
+         y="180.94072"
+         id="text1729"><tspan
+           sodipodi:role="line"
+           id="tspan1727"
+           style="fill:#ff0000;fill-opacity:1;stroke:#ff0000;stroke-width:0.1;stroke-dasharray:none;stroke-opacity:1"
+           x="136.94705"
+           y="180.94072">n=1</tspan></text>
+    </g>
+  </g>
+</svg>

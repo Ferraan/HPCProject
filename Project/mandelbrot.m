@@ -14,7 +14,7 @@ after the predetermined number of iterations, niter ).
 clear
 close all
 
-n=7;
+n=5;
 niter=10;
 
 x0 = -2;   x1 = 0.47;

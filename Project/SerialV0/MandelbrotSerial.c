@@ -42,41 +42,41 @@ int main(int argc, char *argv[]){
     double* k2=(double*)calloc(n*n,sizeof(double)); 
     time1=clock();
     //Naive code
-
-    //Compute the mandelbrot set
-    for (int px = 0; px < n; ++px)
-    {   
-        double cx=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
-        for (int py = 0; py < n; ++py)
-        {
-            
-            double cy=WindowY[0]+py*deltay;
-            double zx=0.;
-            double zy=0.;
-            double zz=0.;
-            //printf("X:%d Y:%d ",px,py);
-            for (int i = 1; i < iter+1; ++i) //To be the same as the matlab code
+    #ifdef SLOW
+        //Compute the mandelbrot set
+        for (int px = 0; px < n; ++px)
+        {   
+            double cx=WindowX[0]+px*deltax; //Posar dintre altre for per OPEN*
+            for (int py = 0; py < n; ++py)
             {
-                double zx2=cx+zx*zx-zy*zy;
-                double zy2=cy+zx*zy*2;
-                zx=zx2;
-                zy=zy2;
-                if (zx*zx+zy*zy>4)
+                
+                double cy=WindowY[0]+py*deltay;
+                double zx=0.;
+                double zy=0.;
+                double zz=0.;
+                //printf("X:%d Y:%d ",px,py);
+                for (int i = 1; i < iter+1; ++i) //To be the same as the matlab code
                 {
-                    zz=iter-i;
-                    break;
+                    double zx2=cx+zx*zx-zy*zy;
+                    double zy2=cy+zx*zy*2;
+                    zx=zx2;
+                    zy=zy2;
+                    if (zx*zx+zy*zy>4)
+                    {
+                        zz=iter-i;
+                        break;
 
+                    }
+                    
                 }
+                ac_mat(k,py,px,n) = zz;
                 
             }
-            ac_mat(k,py,px,n) = zz;
-            
         }
-    }
-    time2=clock();
-    dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
-    printf("Time for n=%d and iter=%d -----> %lf \n", n,iter,dub_time);
-
+        time2=clock();
+        dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
+        printf("Time for n=%d and iter=%d -----> %lf \n", n,iter,dub_time);
+    #endif
     //Optimized code
     time1=clock();
     //Compute the mandelbrot set
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]){
     }
     time2=clock();
     dub_time = (time2 - time1)/(double) CLOCKS_PER_SEC;
-    printf("Time for n=%d and iter=%d optimized -----> %lf \n", n,iter,dub_time);
+    printf("Time for n=%d and iter=%d  -----> %lf \n", n,iter,dub_time);
 
     
 
@@ -131,10 +131,14 @@ int main(int argc, char *argv[]){
             printf("\n");
         }
     #endif
-    writeImage("MandelbrotImageNaive",k,n,n,ch);
+    #ifdef SLOW
+        writeImage("MandelbrotImageNaive",k,n,n,ch);
+    #endif
     writeImage("MandelbrotImageOptimized",k2,n,n,ch);
 
-    free(k);
+    #ifdef SLOW
+        free(k);
+    #endif
     free(k2);
 }
 
