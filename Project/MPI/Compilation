@@ -1,0 +1,1 @@
+mpicc -O3 MandelbrotMPI.c -o MandelbrotMPI.out
